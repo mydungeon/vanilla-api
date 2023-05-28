@@ -1,10 +1,16 @@
 const express = require('express')
 const bcrypt = require('bcrypt')
+const cors = require('cors')
 const app = express()
 const port = 3001
 const users = []
 
 app.use(express.json())
+app.use(cors())
+
+app.get('/', (req, res) => {
+    res.json('test')
+})
 
 app.get('/users', (req, res) => {
     res.json(users)
@@ -17,11 +23,11 @@ app.post('/users', async (req, res) => {
         users.push(user)
         res.status(201).send()
     } catch (error) {
-        
+        res.status(500).send('Oops, something happened')
     }
 })
 
-app.post('/users/login', async (req, res) => {
+app.post('/users/sigin', async (req, res) => {
     const user = users.find(user => user.email === req.body.email)
     if (!user) {
         return res.status(404).send('Cannot find user')
