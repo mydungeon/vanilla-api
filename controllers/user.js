@@ -29,7 +29,7 @@ export const signin = async (req, res) => {
 };
 
 export const signup = async (req, res) => {
-  const { email, password, firstName, lastName } = req.body;
+  const { email, password, firstName } = req.body;
   try {
     const oldUser = await UserModel.findOne({ email });
 
@@ -40,7 +40,7 @@ export const signup = async (req, res) => {
     const result = await UserModel.create({
       email,
       password: hashed,
-      name: `${firstName} ${lastName}`,
+      name: `${firstName}`,
     });
 
     const token = jwt.sign({ email: result.email, id: result._id }, secret, {
