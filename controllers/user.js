@@ -1,27 +1,31 @@
 import jwt from "jsonwebtoken";
 import nodemailer from 'nodemailer';
+import * as dotenv from 'dotenv'
 import { generateOTP, hashPassword, comparePasswords } from "../utils/user.js";
 import { FORGOT_PASSWORD_EMAIL } from "../assets/emails/resetPassword.js";
 import UserModel from "../models/user.js";
+dotenv.config()
 
-const secret = "test";
+const {
+  TOKEN_SECRET
+} = process.env
 
 export const signin = async (req, res) => {
   const { email, password } = req.body;
 
   try {
-    const oldUser = await UserModel.findOne({ email });
-    if (!oldUser)
+    const user = await UserModel.findOne({ email });
+    if (!user)
       return res.status(404).json({ message: "User doesn't exist" });
-    const isPasswordCorrect = await comparePasswords(password, oldUser.password)
+    const isPasswordCorrect = await comparePasswords(password, user.password)
     if (!isPasswordCorrect)
       return res.status(400).json({ message: "Invalid credentials" });
 
-    const token = jwt.sign({ email: oldUser.email, id: oldUser._id }, secret, {
+    const token = jwt.sign({ email: user.email, id: user._id }, TOKEN_SECRET, {
       expiresIn: "1h",
     });
-
-    res.status(200).json({ result: oldUser, token });
+    
+    res.status(200).json({ result: user, token })
   } catch (error) {
     res.status(500).json({ message: "Something went wrong" });
     console.log(error);
@@ -31,22 +35,21 @@ export const signin = async (req, res) => {
 export const signup = async (req, res) => {
   const { email, password, firstName } = req.body;
   try {
-    const oldUser = await UserModel.findOne({ email });
-
-    if (oldUser) {
+    let user = await UserModel.findOne({ email });
+    if (user) {
       return res.status(400).json({ message: "User already exists" });
     }
     const hashed = await hashPassword(password)
-    const result = await UserModel.create({
+    user = await UserModel.create({
       email,
       password: hashed,
       name: `${firstName}`,
     });
 
-    const token = jwt.sign({ email: result.email, id: result._id }, secret, {
+    const token = jwt.sign({ email: user.email, id: user._id }, TOKEN_SECRET, {
       expiresIn: "1h",
     });
-    res.status(201).json({ result, token });
+    res.status(200).json({ result: user, token });
   } catch (error) {
     res.status(500).json({ message: "Something went wrong" });
     console.log(error);
@@ -57,9 +60,9 @@ export const googleSignIn = async (req, res) => {
   const { email, name, token, googleId } = req.body;
 
   try {
-    const oldUser = await UserModel.findOne({ email });
-    if (oldUser) {
-      const result = { _id: oldUser._id.toString(), email, name };
+    const user = await UserModel.findOne({ email });
+    if (user) {
+      const result = { _id: user._id.toString(), email, name };
       return res.status(200).json({ result, token });
     }
 

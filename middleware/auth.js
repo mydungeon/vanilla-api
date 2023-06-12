@@ -1,7 +1,11 @@
 import jwt from "jsonwebtoken";
+import * as dotenv from 'dotenv'
 import UserModel from "../models/user.js";
+dotenv.config()
 
-const secret = "test";
+const {
+  TOKEN_SECRET
+} = process.env
 
 const auth = async (req, res, next) => {
   try {
@@ -9,8 +13,9 @@ const auth = async (req, res, next) => {
     const isCustomAuth = token.length < 500;
     let decodedData;
     if (token && isCustomAuth) {
-      decodedData = jwt.verify(token, secret);
+      decodedData = jwt.verify(token, TOKEN_SECRET);
       req.userId = decodedData?.id;
+      req.token = token
     } else {
       decodedData = jwt.decode(token);
       const googleId = decodedData?.sub.toString();
@@ -19,7 +24,8 @@ const auth = async (req, res, next) => {
     }
     next();
   } catch (error) {
-    console.log(error);
+    res.status(403).json({ message: 'Session expired. Log back in.' });
+    console.log('auth error', error);
   }
 };
 
